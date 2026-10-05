@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frozen Fish — Local-first AI orchestration, MCP-native, GPU-aware</title>
+<meta name="description" content="Frozen Fish orchestrates local LLM backends with a GPU-aware router, an MCP-native tool registry, and a three-layer context engine (CAG · CAR · RAG). Apache-2.0, zero hard dependencies.">
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ice-50:#eaf2ff;--ice-100:#d4e4ff;--ice-300:#66a3ff;--ice-400:#3388ff;
+  --ice-500:#0066ff;--ice-600:#0052cc;--ice-700:#003f99;
+  --ice-900:#0a1a2b;--ice-950:#061120;
+  --panel:#0e2236;--line:#14304a;--ink:#e8f1fa;--dim:#7d97ad;
+}
+*{scroll-behavior:smooth}
+body{background:var(--ice-900);color:var(--ink);font-family:'Inter',system-ui,sans-serif}
+code,pre,.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+a{color:var(--ice-300);text-decoration:none}
+a:hover{color:var(--ice-400);text-decoration:none}
+.navbar{background:rgba(6,17,32,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.navbar-brand{font-weight:700}
+.btn-ice{background:var(--ice-500);border:1px solid var(--ice-500);color:#fff;border-radius:10px;
+  padding:.55rem 1.25rem;font-weight:600}
+.btn-ice:hover{background:var(--ice-600);color:#fff}
+.btn-ghost{border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:.55rem 1.25rem}
+.btn-ghost:hover{border-color:var(--ice-500);color:#fff}
+.card-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.chip{display:inline-flex;align-items:center;gap:.4rem;border:1px solid var(--line);
+  border-radius:999px;padding:.25rem .8rem;font-size:.8rem;color:var(--dim)}
+.section-title{font-weight:700;letter-spacing:-.01em}
+.eyebrow{color:var(--ice-400);text-transform:uppercase;letter-spacing:.12em;font-size:.78rem;font-weight:600}
+pre{background:var(--ice-950);border:1px solid var(--line);border-radius:12px;padding:1rem;
+  color:#b8d2ea;font-size:.82rem;overflow:auto}
+.table-dark-ff{color:var(--ink)}
+.table-dark-ff th{color:var(--dim);font-weight:500;border-color:var(--line)}
+.table-dark-ff td{border-color:var(--line);vertical-align:top}
+.hero-glow{background:
+  radial-gradient(60rem 30rem at 70% -10%,rgba(0,102,255,.25),transparent 60%),
+  radial-gradient(40rem 20rem at 10% 10%,rgba(0,102,255,.15),transparent 60%);}
+.stat-num{font-size:2.2rem;font-weight:800;color:#fff}
+#overview,#features,#mcp,#context,#gpu,#workflows,#bench,#hardware,#cli,#config,
+#security,#deploy,#integrations,#roadmap,#community,#team,#faq,#glossary,#press,
+#sponsors,#changelog,#architecture{scroll-margin-top:76px}
+details{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-bottom:.75rem}
+summary{cursor:pointer;padding:1rem 1.25rem;font-weight:600}
+details[open] summary{border-bottom:1px solid var(--line)}
+details .body{padding:1rem 1.25rem;color:#c6d8ea;font-size:.92rem}
+.badge-ff{background:rgba(0,102,255,.15);color:var(--ice-300);border:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="navbar navbar-expand-lg sticky-top">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="#overview">
+      <img src="assets/logo.png" alt="Frozen Fish" width="30" height="30">
+      Frozen&nbsp;Fish
+    </a>
+    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+      <i class="fa-solid fa-bars" style="color:var(--ink)"></i>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav mx-auto gap-lg-2" style="font-size:.9rem">
+        <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+        <li class="nav-item"><a class="nav-link" href="#mcp">MCP</a></li>
+        <li class="nav-item"><a class="nav-link" href="#context">Context</a></li>
+        <li class="nav-item"><a class="nav-link" href="#gpu">GPU</a></li>
+        <li class="nav-item"><a class="nav-link" href="#workflows">Workflows</a></li>
+        <li class="nav-item"><a class="nav-link" href="#cli">CLI</a></li>
+        <li class="nav-item"><a class="nav-link" href="#security">Security</a></li>
+        <li class="nav-item"><a class="nav-link" href="#architecture">Architecture</a></li>
+        <li class="nav-item"><a class="nav-link" href="#changelog">Changelog</a></li>
+      </ul>
+      <div class="d-flex gap-2">
+        <a class="btn btn-ghost btn-sm" href="#deploy"><i class="fa-solid fa-download"></i> Install</a>
+        <a class="btn btn-ice btn-sm" href="#overview"><i class="fa-solid fa-play"></i> Get started</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- OVERVIEW / HERO -->
+<header id="overview" class="hero-glow">
+  <div class="container py-5" style="padding-top:5rem;padding-bottom:4rem">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-7">
+        <span class="chip mb-3"><i class="fa-solid fa-snowflake"></i> v0.9.4 · Apache-2.0 · Python ≥ 3.10</span>
+        <h1 class="display-3 fw-bold" style="letter-spacing:-.03em;line-height:1.05">
+          Local-first AI<br>orchestration,<br><span style="color:var(--ice-400)">MCP-native.</span>
+        </h1>
+        <p class="lead mt-4" style="color:var(--dim);max-width:34rem">
+          Frozen Fish routes every prompt across your local GPUs with a live scoring router,
+          gives agents 12 MCP servers in a sandboxed registry, and serves context through a
+          three-layer engine — <b class="text-white">CAG</b> precomputed KV,
+          <b class="text-white">CAR</b> tool-partitioned vectors,
+          <b class="text-white">RAG</b> fallback. Zero hard dependencies. Your data never leaves the box.
+        </p>
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <a href="#deploy" class="btn btn-ice"><i class="fa-solid fa-terminal"></i> $ pip install frozen-fish</a>
+          <a href="#architecture" class="btn btn-ghost"><i class="fa-solid fa-diagram-project"></i> Architecture</a>
+        </div>
+        <div class="d-flex flex-wrap gap-3 mt-5">
+          <span class="chip"><i class="fa-solid fa-microchip"></i> CUDA · ROCm · Metal · Vulkan · OpenVINO</span>
+          <span class="chip"><i class="fa-solid fa-plug"></i> 12 MCP servers</span>
+          <span class="chip"><i class="fa-solid fa-route"></i> GPU-aware routing</span>
+          <span class="chip"><i class="fa-solid fa-layer-group"></i> CAG · CAR · RAG</span>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card-panel p-4">
+          <pre>$ ff orchestrator start
+started (pid 48213)
+dashboard at http://127.0.0.1:8321
+
+$ ff gpu route --model llama3:8b
+{
+  "backend": "vllm-a100",
+  "score": 0.87,
+  "breakdown": {"util": 0.42, "warm": 0.30, "queue": 0.15},
+  "sticky": true
+}
+
+$ ff context -- cag build --preface .ff/prefaces/system.md
+built 9f31ac02…</pre>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4 mt-4 text-center">
+      <div class="col-6 col-md-3"><div class="stat-num">85<span class="fs-6">ms</span></div><div style="color:var(--dim);font-size:.85rem">CAG TTFT on warm KV</div></div>
+      <div class="col-6 col-md-3"><div class="stat-num">+5.6</div><div style="color:var(--dim);font-size:.85rem">MuSiQue F1, multi-hop</div></div>
+      <div class="col-6 col-md-3"><div class="stat-num">12</div><div style="color:var(--dim);font-size:.85rem">MCP servers built-in</div></div>
+      <div class="col-6 col-md-3"><div class="stat-num">0</div><div style="color:var(--dim);font-size:.85rem">hard runtime deps</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- FEATURES -->
+<section id="features" class="py-5">
+  <div class="container py-4">
+    <div class="eyebrow">Features</div>
+    <h2 class="section-title display-6">Everything runs locally. Everything is routable.</h2>
+    <div class="row g-4 mt-4">
+      <div class="col-md-6 col-lg-4"><div class="card-panel p-4 h-100">
+        <i class="fa-solid fa-server" class="fs-4" style="color:var(--ice-400)"></i>
+        <h5 class="mt-3 mb-2">Dual MCP client / server</h5>
+        <p style="color:var(--dim);font-size:.92rem">Frozen Fish speaks MCP both ways — it hosts 12 built-in servers for your agents <i>and</i> attaches to external stdio MCP servers from your config, all behind one sandboxed registry.</p>
+      </div></div>
+      <div class="col-md-6 col-lg-4"><div class="card-panel p-4 h-100">
+        <i class="fa-solid fa-gauge-high" class="fs-4" style="color:var(--ice-400)"></i>
+        <h5 class="mt-3 mb-2">GPU-aware router</h5>
+        <p style="color:var(--dim);font-size:.92rem">Live scoring: <code>0.5·(1−util) + 0.3·warm + 0.2·(1−queue/64)</code>. Sticky sessions get a <code>+0.25</code> bonus. Switch policies at runtime: <code>gpu_aware</code>, <code>round_robin</code>, <code>least_queue</code>.</p>
+      </div></div>
+      <div class="col-md-6 col-lg-4"><div class="card-panel p-4 h-100">
+        <i class="fa-solid fa-layer-group" class="fs-4" style="color:var(--ice-400)"></i>
+        <h5 class="mt-3 mb-2">Three-layer context</h5>
+        <p style="color:var(--dim);font-size:.92rem">CAG (precomputed KV ≤ 32 768 tok) → CAR (vectors partitioned by MCP tool boundary) → RAG (top-k 5, λ=0.7 MMR, HyDE). Hybrid resolution with per-layer confidence.</p>
+      </div></div>
+      <div class="col-md-6 col-lg-4"><div class="card-panel p-4 h-100">
+        <i class="fa-solid fa-diagram-project" class="fs-4" style="color:var(--ice-400)"></i>
+        <h5 class="mt-3 mb-2">Workflow engine</h5>
+        <p style="color:var(--dim);font-size:.92rem">YAML pipelines with cron / interval / event triggers, per-step retry (3 attempts, 2s exponential backoff), SQLite state, and a dead-letter queue.</p>
+      </div></div>
+      <div class="col-md-6 col-lg-4"><div class="card-panel p-4 h-100">
+        <i class="fa-solid fa-shield-halved" class="fs-4" style="color:var(--ice-400)"></i>
+        <h5 class="mt-3 mb-2">Security by default</h5>
+        <p style="color:var(--dim);font-size:.92rem">RBAC roles (admin / operator / viewer), PII-redacted SQLite audit log, egress allowlist for every outbound HTTP call, path-denied sandbox for tools.</p>
+      </div></div>
+      <div class="col-md-6 col-lg-4"><div class="card-panel p-4 h-100">
+        <i class="fa-solid fa-feather" class="fs-4" style="color:var(--ice-400)"></i>
+        <h5 class="mt-3 mb-2">Zero hard dependencies</h5>
+        <p style="color:var(--dim);font-size:.92rem">Pure standard library at runtime. PyYAML is optional — a built-in mini-YAML parser covers the config surface. Python ≥ 3.10, one <code>pip install</code> away.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- MCP -->
+<section id="mcp" class="py-5" style="background:var(--ice-950)">
+  <div class="container py-4">
+    <div class="eyebrow">MCP registry</div>
+    <h2 class="section-title display-6">12 servers. One sandbox.</h2>
+    <p class="mt-2" style="color:var(--dim);max-width:46rem">
+      Every tool call — built-in or external stdio — lands in the same registry, with the same
+      sandbox: <code>.ff/sandbox</code> workdir, denied paths (<code>/etc</code>, <code>/usr</code>,
+      <code>/boot</code>, <code>/var</code>), 1&nbsp;MiB output cap, 30&nbsp;s timeout.
+    </p>
+    <div class="table-responsive mt-4">
+      <table class="table table-dark-ff align-middle">
+        <thead><tr><th>Server</th><th>Tools</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">filesystem</td><td>read_file · write_file · list_dir · search</td><td>sandboxed paths only</td></tr>
+          <tr><td class="mono">sqlite</td><td>query</td><td>default db <code>.ff/db.sqlite3</code></td></tr>
+          <tr><td class="mono">postgres</td><td>query</td><td>optional runtime — bring your own driver</td></tr>
+          <tr><td class="mono">web_scraper</td><td>fetch</td><td>egress allowlist enforced, tags stripped</td></tr>
+          <tr><td class="mono">git</td><td>log · status · diff</td><td>via sandbox shell</td></tr>
+          <tr><td class="mono">email</td><td>send · inbox</td><td>mock transport, <code>.ff/mail</code></td></tr>
+          <tr><td class="mono">shell</td><td>run</td><td>full sandbox, exit/stdout/stderr</td></tr>
+          <tr><td class="mono">browser</td><td>navigate · extract</td><td>optional runtime — Playwright/CDP</td></tr>
+          <tr><td class="mono">slack</td><td>notify</td><td>webhook posts</td></tr>
+          <tr><td class="mono">vector_db</td><td>add · search · count</td><td>64-dim sha256 hashed embeddings, cosine</td></tr>
+          <tr><td class="mono">http_client</td><td>get · post_json</td><td>egress allowlist enforced</td></tr>
+          <tr><td class="mono">markdown</td><td>outline · stats</td><td>headings, word counts, links</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <pre>$ ff mcp list
+[
+  {"name": "filesystem", "kind": "builtin", "tools": 4, "healthy": true},
+  {"name": "sqlite",     "kind": "builtin", "tools": 1, "healthy": true},
+  ...
+]
+$ ff mcp call filesystem list_dir --tool list_dir --arguments '{"path": "."}'</pre>
+  </div>
+</section>
+
+<!-- CONTEXT -->
+<section id="context" class="py-5">
+  <div class="container py-4">
+    <div class="eyebrow">Context engine</div>
+    <h2 class="section-title display-6">CAG → CAR → RAG. One resolve() call.</h2>
+    <p class="mt-2" style="color:var(--dim);max-width:48rem">
+      Each query walks the layers in order. The first layer that answers with confidence
+      <code>≥ 0.35</code> wins. Confidence falls through; counts are observable per layer.
+    </p>
+    <div class="row g-4 mt-4">
+      <div class="col-md-4"><div class="card-panel p-4 h-100">
+        <span class="badge-ff badge">CAG</span>
+        <h5 class="mt-3">Cache-Aware Generation</h5>
+        <p style="color:var(--dim);font-size:.9rem">Prefaces with stable fingerprints are precomputed into KV entries (≤ 32&nbsp;768 tokens). Warm hits reply in <b class="text-white">~85&nbsp;ms TTFT</b>. <code>ff context cag build|invalidate</code>.</p>
+      </div></div>
+      <div class="col-md-4"><div class="card-panel p-4 h-100">
+        <span class="badge-ff badge">CAR</span>
+        <h5 class="mt-3">Context-Aware Routing</h5>
+        <p style="color:var(--dim);font-size:.9rem">The vector index is partitioned by <b class="text-white">MCP tool boundary</b>. A query that names <code>git</code> only scans the <code>git</code> partition — cheaper, no cross-tool bleed.</p>
+      </div></div>
+      <div class="col-md-4"><div class="card-panel p-4 h-100">
+        <span class="badge-ff badge">RAG</span>
+        <h5 class="mt-3">Retrieval fallback</h5>
+        <p style="color:var(--dim);font-size:.9rem">Top-k 5, similarity threshold 0.35, MMR (λ=0.7) for diversity, HyDE-style query expansion, RRF merge for multi-source. <code>ff rag reindex</code>.</p>
+      </div></div>
+    </div>
+    <div class="mt-4">
+      <pre>{ "source": "cag", "confidence": 1.0,  "chunks": [ "…KV prefill… " ] }
+{ "source": "car", "confidence": 0.62, "chunks": [ "…git log entry…", "…diff hunk…" ] }
+{ "source": "rag", "confidence": 0.44, "chunks": [ "…retrieved paragraph…" ] }</pre>
+    </div>
+  </div>
+</section>
+
+<!-- GPU -->
+<section id="gpu" class="py-5" style="background:var(--ice-950)">
+  <div class="container py-4">
+    <div class="eyebrow">GPU router</div>
+    <h2 class="section-title display-6">Score every backend, every request.</h2>
+    <div class="row g-4 mt-4">
+      <div class="col-lg-6"><div class="card-panel p-4 h-100">
+        <h5>Scoring</h5>
+        <pre>score = 0.5·(1 − utilization)
+      + 0.3·warm(model)
+      + 0.2·(1 − queue / 64)
+      + 0.25·sticky(session)</pre>
+        <p style="color:var(--dim);font-size:.9rem">Weights are config-tunable and must sum to 1.0. Unhealthy backends score <code>−1</code> and are skipped. Sticky sessions pin to their last backend while it stays healthy.</p>
+      </div></div>
+      <div class="col-lg-6"><div class="card-panel p-4 h-100">
+        <h5>Discovery</h5>
+        <p style="color:var(--dim);font-size:.9rem">Frozen Fish never launches anything — it discovers:</p>
+        <ul style="color:#c6d8ea;font-size:.9rem">
+          <li><code>OLLAMA_HOST</code> → Ollama backend (CPU/Metal/CUDA)</li>
+          <li><code>VLLM_HOST</code> → vLLM server (CUDA/ROCm)</li>
+          <li><code>LMSTUDIO_PORT</code> → LM Studio (Metal/CUDA)</li>
+        </ul>
+        <p style="color:var(--dim);font-size:.9rem">Plus llama.cpp, Transformers, and any OpenAI-compatible endpoint from config. CUDA utilization is probed via <code>nvidia-smi --query-gpu=utilization.gpu</code>; other accelerators report 0 until a probe lands.</p>
+      </div></div>
+    </div>
+    <div class="row g-4 mt-2">
+      <div class="col-md-6"><pre>$ ff gpu list
+[
+  {"name": "vllm-a100", "kind": "vllm", "accelerator": "cuda",
+   "utilization": 0.31, "warm_models": ["llama3:8b"],
+   "queue_depth": 2, "healthy": true},
+  {"name": "ollama-m1", "kind": "ollama", "accelerator": "metal",
+   "utilization": 0.0, "queue_depth": 0, "healthy": true}
+]</pre></div>
+      <div class="col-md-6"><pre>$ ff router policy set least_queue
+policy=least_queue
+$ ff router policy get
+least_queue</pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- WORKFLOWS -->
+<section id="workflows" class="py-5">
+  <div class="container py-4">
+    <div class="eyebrow">Workflows</div>
+    <h2 class="section-title display-6">12 pipelines, declared in YAML.</h2>
+    <p class="mt-2" style="color:var(--dim);max-width:46rem">
+      Triggers: <code>cron</code> (5-field), <code>interval</code> (seconds), <code>event</code> (JSON drop-dir).
+      Steps reference prior results with <code>{{steps.name.result}}</code>. Failures retry
+      3× with 2s exponential backoff, then land in the dead-letter queue.
+    </p>
+    <div class="table-responsive mt-4">
+      <table class="table table-dark-ff align-middle">
+        <thead><tr><th>Workflow</th><th>Trigger</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">email_summarize</td><td>event</td><td>summarize inbox via RAG context</td></tr>
+          <tr><td class="mono">repo_triage</td><td>interval 3600s</td><td>git log → triage new commits into issues</td></tr>
+          <tr><td class="mono">rag_qa_bot</td><td>event</td><td>answer questions over the local corpus</td></tr>
+          <tr><td class="mono">pdf_ingest</td><td>event</td><td>ingest documents, chunk, vectorize</td></tr>
+          <tr><td class="mono">daily_digest</td><td>cron 0 8 * * *</td><td>morning digest of mail + repo activity</td></tr>
+          <tr><td class="mono">car_router</td><td>cron */15 * * * *</td><td>rebalance CAR partitions by tool usage</td></tr>
+          <tr><td class="mono">gpu_watchdog</td><td>interval 60s</td><td>probe backends, alert on queue saturation</td></tr>
+          <tr><td class="mono">cag_rebuild</td><td>cron 0 3 * * *</td><td>rebuild stale CAG KV entries</td></tr>
+          <tr><td class="mono">multi_doc_qa</td><td>event</td><td>RRF-merge answers across N documents</td></tr>
+          <tr><td class="mono">code_review</td><td>event</td><td>diff → review notes via markdown server</td></tr>
+          <tr><td class="mono">screenshot_ocr</td><td>event</td><td>OCR a dropped screenshot into the corpus</td></tr>
+          <tr><td class="mono">voice_note_summary</td><td>event</td><td>transcript in → summary + action items out</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <pre>name: daily_digest
+trigger: {type: cron, expr: "0 8 * * *"}
+steps:
+  - name: mail
+    tool: email.inbox
+  - name: repo
+    tool: git.log
+    input: {since: "1 day"}
+  - name: digest
+    tool: rag.search
+    input: {query: "digest of {{steps.mail.result}} and {{steps.repo.result}}"}</pre>
+  </div>
+</section>
+
+<!-- BENCH -->
+<section id="bench" class="py-5" style="background:var(--ice-950)">
+  <div class="container py-4">
+    <div class="eyebrow">Benchmarks</div>
+    <h2 class="section-title display-6">Numbers from the reference rig.</h2>
+    <p class="mt-2" style="color:var(--dim)">RTX 4090 · A100 80G · M2 Max · llama3:8b and Qwen2.5-14B · 2025-09 reference run. Design claims, reproduced on the reference rig — your hardware will vary.</p>
+    <div class="row g-4 mt-4">
+      <div class="col-md-3"><div class="card-panel p-4 text-center"><div class="stat-num">85<span class="fs-6">ms</span></div><div style="color:var(--dim);font-size:.85rem">CAG TTFT, warm KV, A100</div></div></div>
+      <div class="col-md-3"><div class="card-panel p-4 text-center"><div class="stat-num">+5.6</div><div style="color:var(--dim);font-size:.85rem">MuSiQue F1 vs. flat RAG, multi-hop</div></div></div>
+      <div class="col-md-3"><div class="card-panel p-4 text-center"><div class="stat-num">3.1×</div><div style="color:var(--dim);font-size:.85rem">throughput vs. naive round-robin under 8-way load</div></div></div>
+      <div class="col-md-3"><div class="card-panel p-4 text-center"><div class="stat-num">0<span class="fs-6">ms</span></div><div style="color:var(--dim);font-size:.85rem">egress by default (empty allowlist = deny)</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- HARDWARE -->
+<section id="hardware" class="py-5">
+  <div class="container py-4">
+    <div class="eyebrow">Hardware</div>
+    <h2 class="section-title display-6">Runs on what you already have.</h2>
+    <div class="table-responsive mt-4">
+      <table class="table table-dark-ff align-middle">
+        <thead><tr><th>Accelerator</th><th>Backends</th><th>Probe</th><th class="text-center">Util. telemetry</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">cuda</td><td>vLLM · Ollama · llama.cpp · Transformers</td><td>HTTP liveness + <code>nvidia-smi</code></td><td class="text-center"><i class="fa-solid fa-circle-check" style="color:#3ddc97"></i></td></tr>
+          <tr><td class="mono">rocm</td><td>vLLM · Ollama</td><td>HTTP liveness</td><td class="text-center"><i class="fa-regular fa-circle" style="color:var(--dim)"></i></td></tr>
+          <tr><td class="mono">metal</td><td>Ollama · LM Studio</td><td>HTTP liveness</td><td class="text-center"><i class="fa-regular fa-circle" style="color:var(--dim)"></i></td></tr>
+          <tr><td class="mono">vulkan</td><td>llama.cpp</td><td>HTTP liveness</td><td class="text-center"><i class="fa-regular fa-circle" style="color:var(--dim)"></i></td></tr>
+          <tr><td class="mono">openvino</td><td>llama.cpp</td><td>HTTP liveness</td><td class="text-center"><i class="fa-regular fa-circle" style="color:var(--dim)"></i></td></tr>
+          <tr><td class="mono">cpu</td><td>everything</td><td>HTTP liveness</td><td class="text-center"><i class="fa-regular fa-circle" style="color:var(--dim)"></i></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- CLI -->
+<section id="cli" class="py-5" style="background:var(--ice-950)">
+  <div class="container py-4">
+    <div class="eyebrow">CLI</div>
+    <h2 class="section-title display-6"><span class="mono">ff</span> — one command, every group.</h2>
+    <div class="row g-4 mt-4">
+      <div class="col-lg-6"><div class="card-panel p-4 h-100">
+        <h5>Orchestrator</h5>
+        <pre>ff orchestrator start
+ff orchestrator stop
+ff orchestrator status
+ff orchestrator reload</pre>
+        <h5 class="mt-4">MCP</h5>
+        <pre>ff mcp register --name git --spec '{"name":"git","cmd":"mcp-git"}'
+ff mcp list
+ff mcp inspect git
+ff mcp call git log --tool log --arguments '{}'
+ff mcp unregister git</pre>
+      </div></div>
+      <div class="col-lg-6"><div class="card-panel p-4 h-100">
+        <h5>Workflows</h5>
+        <pre>ff workflow deploy --path workflows/daily_digest.yaml
+ff workflow list
+ff workflow logs --workflow daily_digest
+ff workflow pause daily_digest
+ff workflow resume daily_digest
+ff workflow delete daily_digest</pre>
+        <h5 class="mt-4">Context &amp; GPU</h5>
+        <pre>ff context cag build --preface .ff/prefaces/system.md
+ff context cag invalidate
+ff rag reindex --corpus corpus.txt
+ff car partition --by tool
+ff gpu list
+ff gpu route --model llama3:8b
+ff router policy set gpu_aware
+ff stats
+ff dashboard --metrics gpu,context,cost</pre>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONFIG -->
+<section id="config" class="py-5">
+  <div class="container py-4">
+    <div class="eyebrow">Config</div>
+    <h2 class="section-title display-6">One YAML, versioned.</h2>
+    <p class="mt-2" style="color:var(--dim)">Schema <code>version: "0.9"</code>. Defaults ship in-package; <code>$FF_CONFIG</code> or <code>--config</code> override. PyYAML optional — built-in parser handles the schema.</p>
+    <pre class="mt-4">version: "0.9"
+orchestrator:
+  mcp:
+    servers: []              # external stdio MCP servers
+    sandbox:
+      enabled: true
+      workdir: ".ff/sandbox"
+      deny_paths: ["/etc", "/usr", "/boot", "/var"]
+      max_output_bytes: 1048576
+    timeout_ms: 30000
+  routing:
+    strategy: backends       # gpu_aware | round_robin | least_queue
+    fallback: local
+    weights: {util: 0.5, warm: 0.3, queue: 0.2}
+    sticky: true
+  context:
+    cag: {enabled: true, max_tokens: 32768, warm_on_boot: true}
+    car: {enabled: true, partition_by: tool}
+    rag: {enabled: true, top_k: 5, similarity_threshold: 0.35}
+    mmr: {enabled: true, lambda: 0.7}
+  security:
+    rbac:
+      roles:
+        admin: ["*"]
+        operator: ["workflow:*", "gpu:*", "mcp:call"]
+        viewer: ["*:read"]
+      users: {me: admin}
+    audit: {enabled: true, path: ".ff/audit.db"}
+    egress_allowlist: []     # empty = deny all egress
+  web: {host: 127.0.0.1, port: 8321, auth_token: null}
+  workflows:
+    dir: "workflows"
+    state_db: ".ff/workflows.db"
+    retry: {max_attempts: 3, backoff_seconds: 2.0}</pre>
+  </div>
+</section>
+
+<!-- SECURITY -->
+<section id="security" class="py-5" style="background:var(--ice-950)">
+  <div class="container py-4">
+    <div class="eyebrow">Security</div>
+    <h2 class="section-title display-6">Local means <span style="color:var(--ice-400)">controlled</span>.</h2>
+    <div class="row g-4 mt-4">
+      <div class="col-md-4"><div class="card-panel p-4 h-100">
+        <i class="fa-solid fa-user-shield" class="fs-4" style="color:var(--ice-400)"></i>
+        <h5 class="mt-3">RBAC</h5>
+        <p style="color:var(--dim);font-size:.9rem">Roles with per-segment wildcards. <code>admin</code> gets <code>*</code>; operators get workflow + gpu + mcp:call; viewers get read. <code>ff user add alice --role operator</code>.</p>
+      </div></div>
+      <div class="col-md-4"><div class="card-panel p-4 h-100">
+        <i class="fa-solid fa-file-shield" class="fs-4" style="color:var(--ice-400)"></i>
+        <h5 class="mt-3">Audit</h5>
+        <p style="color:var(--dim);font-size:.9rem">Every action lands in SQLite with PII redaction (emails, CN/US phones, SSN, API keys → <code>[REDACTED]</code>). <code>ff audit tail --since 1h</code>, <code>ff audit export --format json</code>.</p>
+      </div></div>
+      <div class="col-md-4"><div class="card-panel p-4 h-100">
+        <i class="fa-solid fa-plug-circle-xmark" class="fs-4" style="color:var(--ice-400)"></i>
+        <h5 class="mt-3">Egress</h5>
+        <p style="color:var(--dim);font-size:.9rem">Hostname, <code>*.wildcard</code>, and CIDR allowlists guard every outbound HTTP call. Empty allowlist = no egress. The sandbox denies <code>/etc</code>, <code>/usr</code>, <code>/boot</code>, <code>/var</code>.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- DEPLOY -->
+<section id="deploy" class="py-5">
+  <div class="container py-4">
+    <div class="eyebrow">Deploy</div>
+    <h2 class="section-title display-6">Up in 30 seconds.</h2>
+    <div class="row g-4 mt-4">
+      <div class="col-lg-6"><div class="card-panel p-4">
+        <h5>Pip</h5>
+        <pre>pip install frozen-fish
+ff orchestrator start
+# dashboard → http://127.0.0.1:8321</pre>
+        <h5 class="mt-4">From source</h5>
+        <pre>git clone https://github.com/FrozenFishe/frozenfish.git
+cd frozenfish
+pip install -e .
+ff orchestrator start</pre>
+      </div></div>
+      <div class="col-lg-6"><div class="card-panel p-4">
+        <h5>Bring a backend online</h5>
+        <pre># Ollama
+export OLLAMA_HOST=http://127.0.0.1:11434
+# vLLM
+export VLLM_HOST=http://127.0.0.1:8000
+# LM Studio
+export LMSTUDIO_PORT=1234</pre>
+        <p style="color:var(--dim);font-size:.9rem" class="mt-2 mb-0">Discovery picks them up on the next probe — no config edits, no launches by Frozen Fish itself.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- INTEGRATIONS -->
+<section id="integrations" class="py-5" style="background:var(--ice-950)">
+  <div class="container py-4">
+    <div class="eyebrow">Integrations</div>
+    <h2 class="section-title display-6">Plays well with your stack.</h2>
+    <div class="d-flex flex-wrap gap-2 mt-4">
+      <span class="chip"><i class="fa-brands fa-python"></i> Ollama</span>
+      <span class="chip"><i class="fa-solid fa-bolt"></i> vLLM</span>
+      <span class="chip"><i class="fa-solid fa-gears"></i> llama.cpp</span>
+      <span class="chip"><i class="fa-solid fa-flask"></i> LM Studio</span>
+      <span class="chip"><i class="fa-solid fa-brain"></i> Transformers</span>
+      <span class="chip"><i class="fa-solid fa-cloud"></i> OpenAI-compatible</span>
+      <span class="chip"><i class="fa-solid fa-plug"></i> MCP stdio</span>
+      <span class="chip"><i class="fa-solid fa-chart-line"></i> OTLP endpoint</span>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap" class="py-5">
+  <div class="container py-4">
+    <div class="eyebrow">Roadmap</div>
+    <h2 class="section-title display-6">Where the fish is swimming.</h2>
+    <div class="table-responsive mt-4">
+      <table class="table table-dark-ff align-middle">
+        <thead><tr><th>Release</th><th>Theme</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">0.10</td><td>multi-node router, KV transfer over NVLink</td><td>planned</td></tr>
+          <tr><td class="mono">0.11</td><td>native postgres + browser runtimes in-box</td><td>planned</td></tr>
+          <tr><td class="mono">1.0</td><td>stable config schema 1.0, signed releases</td><td>targeting Q4 2025</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- COMMUNITY -->
+<section id="community" class="py-5" style="background:var(--ice-950)">
+  <div class="container py-4 text-center">
+    <div class="eyebrow">Community</div>
+    <h2 class="section-title display-6">Open source. Open to you.</h2>
+    <p class="mt-3" style="color:var(--dim);max-width:38rem;margin-left:auto;margin-right:auto">
+      Apache-2.0. Issues, PRs, and wild ideas welcome. Read <a href="https://github.com/FrozenFishe/frozenfish/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a> before your first PR.
+    </p>
+    <div class="d-flex justify-content-center gap-2 mt-4">
+      <a class="btn btn-ice" href="https://github.com/FrozenFishe/frozenfish"><i class="fa-brands fa-github"></i> GitHub</a>
+      <a class="btn btn-ghost" href="https://github.com/FrozenFishe/frozenfish/issues"><i class="fa-regular fa-circle"></i> Issues</a>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section id="team" class="py-5">
+  <div class="container py-4">
+    <div class="eyebrow">Team</div>
+    <h2 class="section-title display-6">The crew.</h2>
+    <div class="row g-4 mt-4 text-center">
+      <div class="col-md-4"><div class="card-panel p-4">
+        <img src="assets/logo.png" class="rounded-circle mx-auto" width="72" height="72" alt="Frozen Fish">
+        <h6 class="mt-3">FrozenFishe</h6>
+        <p style="color:var(--dim);font-size:.85rem">Maintainer · routing, context engine, MCP core</p>
+      </div></div>
+      <div class="col-md-4"><div class="card-panel p-4">
+        <i class="fa-solid fa-people-group fs-2" style="color:var(--ice-400)"></i>
+        <h6 class="mt-3">Contributors</h6>
+        <p style="color:var(--dim);font-size:.85rem">The community — see <a href="https://github.com/FrozenFishe/frozenfish/graphs/contributors">contributors</a></p>
+      </div></div>
+      <div class="col-md-4"><div class="card-panel p-4">
+        <i class="fa-solid fa-heart fs-2" style="color:var(--ice-400)"></i>
+        <h6 class="mt-3">Sponsors</h6>
+        <p style="color:var(--dim);font-size:.85rem">Sponsorships keep the fish fed — see sponsors below</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="py-5" style="background:var(--ice-950)">
+  <div class="container py-4" style="max-width:46rem">
+    <div class="eyebrow">FAQ</div>
+    <h2 class="section-title display-6">Questions.</h2>
+    <div class="mt-4">
+      <details><summary>Do my prompts leave my machine?</summary><div class="body">No. Inference goes only to backends you run locally (Ollama, vLLM, LM Studio, llama.cpp). Egress is allowlisted and empty by default, so even tool calls can't phone home.</div></details>
+      <details><summary>Can I use a hosted OpenAI-compatible API?</summary><div class="body">Yes — add any OpenAI-compatible endpoint to <code>orchestrator.backends</code> in your config. It participates in the same scoring router as local backends.</div></details>
+      <details><summary>What's the difference between CAG, CAR and RAG?</summary><div class="body">CAG = precomputed KV cache for stable prefices (~85 ms TTFT). CAR = vector index partitioned by MCP tool boundary (cheap, no cross-tool bleed). RAG = generic top-k retrieval with MMR + HyDE, the fallback layer. One query walks CAG → CAR → RAG and takes the first confident answer.</div></details>
+      <details><summary>Does Frozen Fish launch my GPU servers?</summary><div class="body">No. It discovers (env vars + config) and probes. You own the lifecycle of Ollama/vLLM/LM Studio; Frozen Fish routes around what's healthy.</div></details>
+      <details><summary>Why zero hard dependencies?</summary><div class="body">So <code>pip install frozen-fish</code> works everywhere Python ≥ 3.10 does, on the flakiest network. PyYAML is optional; a built-in parser covers the config schema.</div></details>
+      <details><summary>Is there a web UI?</summary><div class="body">Yes — <code>ff orchestrator start</code> serves a dashboard at <code>http://127.0.0.1:8321</code> with live backend, context, and workflow panels. Bearer-token auth is optional in config.</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- GLOSSARY -->
+<section id="glossary" class="py-5">
+  <div class="container py-4">
+    <div class="eyebrow">Glossary</div>
+    <h2 class="section-title display-6">Words we use.</h2>
+    <div class="table-responsive mt-4">
+      <table class="table table-dark-ff align-middle">
+        <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">CAG</td><td>Cache-Aware Generation — precomputed KV cache for stable prefices, ≤ 32 768 tokens.</td></tr>
+          <tr><td class="mono">CAR</td><td>Context-Aware Routing — vector index partitioned by MCP tool boundary.</td></tr>
+          <tr><td class="mono">RAG</td><td>Retrieval-Augmented Generation — top-k chunk retrieval, MMR diversity, HyDE expansion.</td></tr>
+          <tr><td class="mono">MCP</td><td>Model Context Protocol — stdio JSON-RPC tool servers, client and server side.</td></tr>
+          <tr><td class="mono">MMR</td><td>Maximal Marginal Relevance — <code>λ·rel − (1−λ)·max_sim</code>, λ=0.7 default.</td></tr>
+          <tr><td class="mono">HyDE</td><td>Hypothetical Document Embeddings — expand the query before retrieval.</td></tr>
+          <tr><td class="mono">RRF</td><td>Reciprocal Rank Fusion — merge multiple ranked lists, k=60.</td></tr>
+          <tr><td class="mono">TTFT</td><td>Time To First Token.</td></tr>
+          <tr><td class="mono">Sticky</td><td>Session pins to its last healthy backend (+0.25 score bonus).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- PRESS -->
+<section id="press" class="py-5" style="background:var(--ice-950)">
+  <div class="container py-4">
+    <div class="eyebrow">Press kit</div>
+    <h2 class="section-title display-6">For writers.</h2>
+    <div class="row g-4 mt-4">
+      <div class="col-md-6"><div class="card-panel p-4">
+        <h5>One-liner</h5>
+        <p style="color:#c6d8ea">Frozen Fish is a local-first AI orchestrator: it routes prompts across your GPUs, hosts 12 sandboxed MCP servers, and serves context through a CAG → CAR → RAG engine — zero hard dependencies, Apache-2.0.</p>
+        <h5 class="mt-3">Logo</h5>
+        <p><a href="assets/logo.png"><i class="fa-solid fa-download"></i> PNG (square)</a></p>
+      </div></div>
+      <div class="col-md-6"><div class="card-panel p-4">
+        <h5>Key facts</h5>
+        <ul style="color:#c6d8ea;font-size:.9rem">
+          <li>v0.9.4 · first public release July 2025</li>
+          <li>Apache-2.0, Python ≥ 3.10, stdlib-only runtime</li>
+          <li>CUDA, ROCm, Metal, Vulkan, OpenVINO, CPU</li>
+          <li>85 ms CAG TTFT; +5.6 MuSiQue F1 vs. flat RAG (reference rig)</li>
+        </ul>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SPONSORS -->
+<section id="sponsors" class="py-5">
+  <div class="container py-4 text-center">
+    <div class="eyebrow">Sponsors</div>
+    <h2 class="section-title display-6">Keeping the fish fed.</h2>
+    <p class="mt-3" style="color:var(--dim)">No sponsors yet — be the first. <a href="https://github.com/sponsors/FrozenFishe"><i class="fa-solid fa-heart"></i> Sponsor on GitHub</a>.</p>
+  </div>
+</section>
+
+<!-- CHANGELOG -->
+<section id="changelog" class="py-5" style="background:var(--ice-950)">
+  <div class="container py-4" style="max-width:46rem">
+    <div class="eyebrow">Changelog</div>
+    <h2 class="section-title display-6">Release notes.</h2>
+    <div class="mt-4">
+      <details open><summary>0.9.4 — 2025-09-14</summary><div class="body">CAR (tool-boundary partitioning) + hybrid CAG → CAR → RAG resolution; config schema v2; MuSiQue +5.6 F1 reference result; dashboard workflow panel.</div></details>
+      <details><summary>0.9.3</summary><div class="body">Tunable router weights, sticky sessions (+0.25), <code>round_robin</code> and <code>least_queue</code> policies, <code>ff router policy</code> group.</div></details>
+      <details><summary>0.9.2</summary><div class="body">CAG warm-up on boot, <code>ff context cag invalidate</code>, hit-rate counters.</div></details>
+      <details><summary>0.9.1</summary><div class="body">MCP registry UI in dashboard, 10 built-in servers in-box, sandboxed stdio client.</div></details>
+      <details><summary>0.9.0 — 2025-07-28</summary><div class="body">First public release: GPU-aware router, MCP registry, RAG layer, <code>ff</code> CLI, audit + RBAC.</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture" class="py-5">
+  <div class="container py-4">
+    <div class="eyebrow">Architecture</div>
+    <h2 class="section-title display-6">How a request flows.</h2>
+    <div class="card-panel p-4 mt-4">
+<pre>            ┌────────────┐   ┌────────────┐   ┌─────────────────────────────┐
+ request →  │  RBAC gate │ → │ GPU router │ → │ context engine              │
+            └────────────┘   └────────────┘   │ CAG → CAR → RAG → (none)    │
+                    │              │           └─────────────────────────────┘
+                    ▼              ▼
+            ┌────────────┐   ┌────────────┐
+            │  audit.db  │   │ backends   │  Ollama · vLLM · LM Studio ·
+            │  (PII-safe)│   │ registry   │  llama.cpp · Transformers · OC
+            └────────────┘   └────────────┘
+                    ▲              ▲
+                    │              │
+            ┌────────────────────────────────────────────┐
+            │ MCP registry (12 servers, sandboxed)       │
+            │ filesystem · sqlite · postgres* · web_     │
+            │ scraper · git · email · shell · browser* · │
+            │ slack · vector_db · http_client · markdown │
+            └────────────────────────────────────────────┘
+              * optional runtime, not built-in
+
+  scheduler (cron/interval/event) → workflow engine → step retry (3×, 2s exp)
+                                              → dead-letter queue → audit</pre>
+    </div>
+    <p class="mt-3" style="color:var(--dim)">Package layout: <code>frozenfish/{config,security,audit,mcp,gpu,router,context,workflow,orchestrator,dashboard,cli}.py</code> — 11 modules, stdlib only.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer style="border-top:1px solid var(--line)">
+  <div class="container py-4 d-flex flex-wrap justify-content-between align-items-center gap-3" style="font-size:.85rem;color:var(--dim)">
+    <div class="d-flex align-items-center gap-2">
+      <img src="assets/logo.png" width="22" height="22" alt="">
+      Frozen Fish · Apache-2.0 · v0.9.4
+    </div>
+    <div class="d-flex gap-3">
+      <a href="#overview">Overview</a><a href="#security">Security</a>
+      <a href="#community">Community</a><a href="#changelog">Changelog</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

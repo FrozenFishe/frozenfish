@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "frozen-fish"
+version = "0.9.4"
+description = "Local-first AI workflow orchestration layer for the MCP ecosystem - GPU-aware routing, CAG cache, CAR partitioning, RAG fallback."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Frozen Fish contributors" }]
+keywords = ["mcp", "orchestration", "local-ai", "rag", "cag", "car", "gpu", "workflows", "local-first"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: System :: Distributed Computing",
+]
+# Zero hard dependencies: pure standard library. Air-gapped friendly by design.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+yaml = ["PyYAML>=6"]
+
+[project.scripts]
+ff = "frozenfish.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/frozen-fish/frozen-fish"
+Documentation = "https://github.com/frozen-fish/frozen-fish/tree/main/docs"
+Issues = "https://github.com/frozen-fish/frozen-fish/issues"
+
+[tool.setuptools.packages.find]
+include = ["frozenfish*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
