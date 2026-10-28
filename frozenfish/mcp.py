@@ -256,9 +256,10 @@ class McpEntry:
 class McpRegistry:
     """Holds every registered MCP server and dispatches tool calls."""
 
-    def __init__(self, sandbox: Sandbox | None = None):
+    def __init__(self, sandbox: Sandbox | None = None, egress=None):
         self._entries: dict[str, McpEntry] = {}
         self.sandbox = sandbox
+        self.egress = egress  # security.EgressFilter | None
         self._lock = threading.RLock()
 
     def register_builtin(self, server: McpServer) -> McpEntry:
@@ -311,11 +312,9 @@ class McpRegistry:
         ctx = {
             "session": session or str(uuid.uuid4()),
             "sandbox": self.sandbox,
+            "egress": self.egress,
         }
-        result = entry.call(tool, arguments, ctx)
-        if self.sandbox is not None and isinstance(result, dict) and "stdout" in result:
-            result = dict(result)
-        return result
+        return entry.call(tool, arguments, ctx)
 
     def shutdown(self) -> None:
         for entry in self._entries.values():
@@ -690,8 +689,12 @@ ADVERTISED_NAMES = [
 ]
 
 
-def build_registry(config=None, base_dir: str = ".") -> McpRegistry:
-    """Create a registry pre-loaded with every available built-in server."""
+def build_registry(config=None, base_dir: str = ".", egress=None) -> McpRegistry:
+    """Create a registry pre-loaded with every available built-in server.
+
+    When ``egress`` is not given and a ``config`` is, the egress allowlist
+    from the config is used (empty list = deny all outbound HTTP).
+    """
     workdir = os.path.join(base_dir, ".ff", "sandbox")
     sandbox_cfg = config.get("orchestrator.mcp.sandbox") if config is not None else None
     sb = Sandbox(
@@ -700,7 +703,11 @@ def build_registry(config=None, base_dir: str = ".") -> McpRegistry:
         deny_paths=(sandbox_cfg.get("deny_paths") if sandbox_cfg else None) or ["/etc", "/usr", "/boot", "/var"],
         max_output_bytes=int(sandbox_cfg.get("max_output_bytes", 1_048_576)) if sandbox_cfg else 1_048_576,
     )
-    reg = McpRegistry(sandbox=sb)
+    if egress is None and config is not None:
+        from .security import egress_from_config
+
+        egress = egress_from_config(config)
+    reg = McpRegistry(sandbox=sb, egress=egress)
     for factory in BUILTIN_SERVERS:
         reg.register_builtin(factory())
     if config is not None:

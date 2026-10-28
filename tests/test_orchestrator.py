@@ -70,6 +70,9 @@ class TestStatus:
         }
         assert s["security"]["egress_entries"] == 0
 
+        # the egress filter is wired into the MCP registry (enforced on calls)
+        assert orch.mcp.egress is orch.egress
+
         # no workflows on disk in a fresh dir
         assert s["workflows"]["loaded"] == []
         assert s["workflows"]["enabled"] == []

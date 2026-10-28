@@ -10,6 +10,7 @@ from frozenfish.mcp import (
     ADVERTISED_NAMES,
     EmailServer,
     FilesystemServer,
+    HttpClientServer,
     MarkdownServer,
     McpEntry,
     McpRegistry,
@@ -21,6 +22,7 @@ from frozenfish.mcp import (
     build_registry,
 )
 from frozenfish.config import Config
+from frozenfish.security import EgressFilter
 
 # ---------------------------------------------------------------------------
 # Sandbox
@@ -193,6 +195,34 @@ class TestRegistry:
         reg.register_builtin(VectorServer())
         r = reg.call("vector_db", "count", {})
         assert isinstance(r, dict) and r["count"] == 0
+
+
+class TestEgressWiring:
+    def test_registry_denies_unlisted_host(self):
+        reg = McpRegistry()
+        reg.egress = EgressFilter(["allowed.example.com"])
+        reg.register_builtin(HttpClientServer())
+        with pytest.raises(PermissionError, match="egress denied"):
+            reg.call("http_client", "get", {"url": "http://blocked.example.com/x"})
+
+    def test_empty_allowlist_denies_all(self):
+        reg = McpRegistry(egress=EgressFilter([]))
+        reg.register_builtin(HttpClientServer())
+        with pytest.raises(PermissionError, match="egress denied"):
+            reg.call("http_client", "get", {"url": "http://anything.example.com/"})
+
+    def test_build_registry_wires_egress_from_config(self, tmp_path):
+        cfg = Config.load(None)
+        reg = build_registry(cfg, base_dir=str(tmp_path))
+        assert reg.egress is not None
+        assert reg.egress.entries == []  # local-first default: deny all
+        reg.register_builtin(HttpClientServer())
+        with pytest.raises(PermissionError, match="egress denied"):
+            reg.call("http_client", "get", {"url": "http://anything.example.com/"})
+
+    def test_no_config_means_no_egress_filter(self, tmp_path):
+        reg = build_registry(base_dir=str(tmp_path))
+        assert reg.egress is None
 
 
 class TestExternalEntry:

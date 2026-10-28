@@ -37,8 +37,8 @@ class Orchestrator:
             enabled=bool(cfg.get("orchestrator.security.audit.enabled", True)),
         )
 
-        # mcp + sandbox
-        self.mcp: McpRegistry = build_registry(cfg, base_dir=self.base_dir)
+        # mcp + sandbox (egress allowlist enforced on outbound tool calls)
+        self.mcp: McpRegistry = build_registry(cfg, base_dir=self.base_dir, egress=self.egress)
 
         # gpu + router
         self.gpus: GpuRegistry = backend_from_config(cfg)
